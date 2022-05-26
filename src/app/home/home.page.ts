@@ -5,6 +5,7 @@ import {
   AlertController,
   ToastController,
 } from '@ionic/angular';
+import { TodoService } from '../services/todo.service';
 
 @Component({
   selector: 'app-home',
@@ -17,13 +18,33 @@ export class HomePage {
   constructor(
     private alertCrtl: AlertController,
     private toastCtrl: ToastController,
-    private actionSheetCrtl: ActionSheetController
+    private actionSheetCrtl: ActionSheetController,
+    private todoService: TodoService
   ) {
-    const tarefaSalva = localStorage.getItem('tarefaUsuario');
+    // const tarefaSalva = localStorage.getItem('tarefaUsuario');
 
-    if (tarefaSalva != null) {
-      this.tarefas = JSON.parse(tarefaSalva);
-    }
+    // if (tarefaSalva != null) {
+    //   this.tarefas = JSON.parse(tarefaSalva);
+    // }
+
+    this.carregaTarefa();
+  }
+
+  carregaTarefa() {
+    this.todoService
+      .listaTarefa()
+      .then(async (resposta: any[]) => {
+        console.table(resposta);
+        this.tarefas = resposta;
+      })
+      .catch(async (error) => {
+        const toast = await this.toastCtrl.create({
+          message: 'Erro ao realizar operação!',
+          duration: 2000,
+          position: 'top',
+        });
+        toast.present();
+      });
   }
 
   async showAdd() {
@@ -67,10 +88,31 @@ export class HomePage {
       toast.present();
       return;
     }
-    const tarefa = { nome: novaTarefa, realizada: false };
+    const tarefa = { nome: novaTarefa, realizada: 0 };
     this.tarefas.push(tarefa);
 
-    this.salvaLocalStorage();
+    // this.salvaLocalStorage();
+
+    this.todoService
+      .adicionaTarefa(tarefa.nome, tarefa.realizada)
+      .then(async (resposta) => {
+        const toast = await this.toastCtrl.create({
+          message: 'Operação Realizada com Sucesso!',
+          duration: 2000,
+          position: 'top',
+        });
+        toast.present();
+
+        this.carregaTarefa();
+      })
+      .catch(async (error) => {
+        const toast = await this.toastCtrl.create({
+          message: 'Erro ao realizar operação!',
+          duration: 2000,
+          position: 'top',
+        });
+        toast.present();
+      });
   }
   salvaLocalStorage() {
     localStorage.setItem('tarefaUsuario', JSON.stringify(this.tarefas));
